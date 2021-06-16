@@ -143,6 +143,11 @@ class _$ArticleDao extends ArticleDao {
   }
 
   @override
+  Future<void> clearArticles() async {
+    await _queryAdapter.queryNoReturn('delete from ArticleEntity');
+  }
+
+  @override
   Future<void> saveArticles(List<ArticleEntity> articles) async {
     await _articleEntityInsertionAdapter.insertList(
         articles, OnConflictStrategy.replace);

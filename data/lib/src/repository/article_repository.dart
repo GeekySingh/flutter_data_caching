@@ -31,9 +31,17 @@ class ArticleRepositoryImpl extends BaseRepository
         createNetworkCall: _articleService.getArticles(),
         map: (list) => list?.map((e) => e.toModel()).toList(),
         saveNetworkResult: (response) async {
-          if (response != null)
+          print('Saving response in DB: ${response?.toJson()}');
+          if (response != null) {
             await _articleDao.saveArticles(
                 response.articles.map((e) => e.toEntity()).toList());
+            print('Response saved in DB!');
+          }
         });
+  }
+
+  @override
+  Future<void> clearArticles() {
+    return _articleDao.clearArticles();
   }
 }

@@ -16,6 +16,8 @@ import '../usecase/article_use_case_impl.dart'
 _i1.GetIt $initGetIt(_i1.GetIt get,
     {String? environment, _i2.EnvironmentFilter? environmentFilter}) {
   final gh = _i2.GetItHelper(get, environment, environmentFilter);
+  gh.factory<_i3.ClearAllArticleUseCase>(
+      () => _i4.ClearAllArticleUseCaseImpl(get<_i3.ArticleRepository>()));
   gh.factory<_i3.GetAllArticleUseCase>(
       () => _i4.GetAllArticleUseCaseImpl(get<_i3.ArticleRepository>()));
   gh.factory<_i3.GetArticleByIdUseCase>(

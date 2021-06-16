@@ -14,3 +14,8 @@ abstract class GetAllArticleUseCase implements BaseUseCase {
 abstract class GetArticleByIdUseCase implements BaseUseCase {
   Stream<Resource<ArticleModel?>> getArticle(int id);
 }
+
+abstract class ClearAllArticleUseCase implements BaseUseCase {
+
+  Future<void> clearArticles();
+}

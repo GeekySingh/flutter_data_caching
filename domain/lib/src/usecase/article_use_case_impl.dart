@@ -26,3 +26,13 @@ class GetArticleByIdUseCaseImpl extends GetArticleByIdUseCase {
   @override
   Stream<Resource<ArticleModel?>> getArticle(int id) => _repository.getArticle(id);
 }
+
+@Injectable(as: ClearAllArticleUseCase)
+class ClearAllArticleUseCaseImpl extends ClearAllArticleUseCase {
+  final ArticleRepository _repository;
+
+  ClearAllArticleUseCaseImpl(this._repository);
+
+  @override
+  Future<void> clearArticles() => _repository.clearArticles();
+}

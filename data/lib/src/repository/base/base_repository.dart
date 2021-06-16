@@ -4,6 +4,7 @@ import 'package:logger/logger.dart';
 
 typedef DtoToModelMap<Dto, Model> = Model Function(Dto dto);
 typedef EntityToModelMap<Entity, Model> = Model? Function(Entity? entity);
+typedef ShouldRefresh<Entity> = bool Function(Entity? entity);
 typedef SaveNetworkResult<Dto> = Future<void> Function(Dto? dto);
 typedef OnNetworkCallFailure = Function(Exception);
 
@@ -41,7 +42,7 @@ abstract class BaseRepository {
       required Future<Dto?> createNetworkCall,
       required EntityToModelMap<Entity, Model> map,
       required SaveNetworkResult<Dto> saveNetworkResult,
-      bool shouldRefresh = true,
+      ShouldRefresh<Entity>? shouldRefresh,
       OnNetworkCallFailure? onNetworkCallFailure}) async* {
     print('getNetworkBoundData: Loading data from DB...');
     yield* emit(Resource.loading(null));
@@ -50,7 +51,7 @@ abstract class BaseRepository {
     final dbResource = await _safeDatabaseCall(loadFromDb);
 
     /// check if we need to fetch latest data from network or not
-    if (shouldRefresh) {
+    if (shouldRefresh?.call(dbResource.data) ?? true) {
       /// return db data if we have
       print('getNetworkBoundData: data found in DB, loading from network...');
       yield* emit(Resource.loading(map(dbResource.data)));
@@ -65,7 +66,8 @@ abstract class BaseRepository {
           print('getNetworkBoundData: network data loaded!');
           print('getNetworkBoundData: saving network data...');
           /// save network result
-          saveNetworkResult(networkResource.data);
+          await saveNetworkResult(networkResource.data);
+          print('getNetworkBoundData: network data saved in DB!');
 
           /// get latest data from db
           final newDbResource = await _safeDatabaseCall(loadFromDb);
@@ -125,7 +127,6 @@ abstract class BaseRepository {
       return Resource.success(response);
     } on Exception catch (exception) {
       _logger.e("Network error message -> ${exception.toString()}");
-      _logger.e(exception);
       if (exception is DioError) {
         switch ((exception).type) {
           case DioErrorType.connectTimeout:

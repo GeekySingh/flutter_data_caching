@@ -15,4 +15,7 @@ abstract class ArticleDao {
 
   @Query('select * from $_tableName where id = :id')
   Future<ArticleEntity?> getArticleById(int id);
+
+  @Query('delete from $_tableName')
+  Future<void> clearArticles();
 }

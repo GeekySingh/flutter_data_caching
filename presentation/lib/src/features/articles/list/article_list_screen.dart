@@ -15,6 +15,10 @@ class ArticleListScreen extends CoreScreen<ArticleListViewModel> {
     return Scaffold(
       appBar: AppBar(title: Text(AppStrings.articleList)),
       body: _buildBody(context, viewModel),
+      floatingActionButton: FloatingActionButton(
+        child: Icon(Icons.refresh),
+        onPressed: () async => await viewModel.clearAllArticleUseCase.clearArticles(),
+      ),
     );
   }
 
@@ -24,7 +28,7 @@ class ArticleListScreen extends CoreScreen<ArticleListViewModel> {
         builder: (context, Resource<List<ArticleModel>?> snapshot) {
           switch (snapshot.status) {
             case Status.LOADING:
-              if (snapshot.data == null)
+              if (snapshot.data == null || snapshot.data!.isEmpty)
                 return Center(child: CircularProgressIndicator());
               else
                 return _buildListView(snapshot.data!, viewModel);

@@ -5,4 +5,6 @@ abstract class ArticleRepository {
   Stream<Resource<List<ArticleModel>?>> getArticles();
 
   Stream<Resource<ArticleModel?>> getArticle(int id);
+
+  Future<void> clearArticles();
 }
