@@ -1,5 +1,4 @@
 
-import 'package:domain/src/common/result.dart';
 import 'package:domain/src/model/article_model.dart';
 import 'package:domain/src/repository/article_repository.dart';
 import 'package:injectable/injectable.dart';
@@ -14,7 +13,7 @@ class GetAllArticleUseCaseImpl extends GetAllArticleUseCase {
   GetAllArticleUseCaseImpl(this._repository);
 
   @override
-  Future<Result<List<ArticleModel>>> getArticles() => _repository.getArticles();
+  Stream<Resource<List<ArticleModel>?>> getArticles() => _repository.getArticles();
 }
 
 @Injectable(as: GetArticleByIdUseCase)
@@ -25,5 +24,5 @@ class GetArticleByIdUseCaseImpl extends GetArticleByIdUseCase {
   GetArticleByIdUseCaseImpl(this._repository);
 
   @override
-  Future<Result<ArticleModel>> getArticle(int id) => _repository.getArticle(id);
+  Stream<Resource<ArticleModel?>> getArticle(int id) => _repository.getArticle(id);
 }

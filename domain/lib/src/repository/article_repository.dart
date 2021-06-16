@@ -1,11 +1,8 @@
-
-import 'package:domain/src/common/result.dart';
+import 'package:domain/domain.dart';
 import 'package:domain/src/model/article_model.dart';
 
 abstract class ArticleRepository {
+  Stream<Resource<List<ArticleModel>?>> getArticles();
 
-  Future<Result<List<ArticleModel>>> getArticles();
-
-  Future<Result<ArticleModel>> getArticle(int id);
-
+  Stream<Resource<ArticleModel?>> getArticle(int id);
 }

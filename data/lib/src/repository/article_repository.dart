@@ -17,22 +17,23 @@ class ArticleRepositoryImpl extends BaseRepository
   ArticleRepositoryImpl(this._articleService, this._articleDao);
 
   @override
-  Future<Result<ArticleModel>> getArticle(int id) async {
-    // return safeCall(_articleService.getArticles(),
-    //     mapper: (ArticleResponse response) => response.articles
-    //         .map((e) => e.toModel())
-    //         .toList()
-    //         .firstWhere((element) => element.id == id));
-    return safeDbCall(_articleDao.getArticleById(id),
-        mapper: (ArticleEntity? entity) => entity?.toModel());
+  Stream<Resource<ArticleModel?>> getArticle(int id) {
+    return getLocalData<ArticleEntity, ArticleModel>(
+        loadFromDb: _articleDao.getArticleById(id),
+        map: (entity) => entity?.toModel());
   }
 
   @override
-  Future<Result<List<ArticleModel>>> getArticles() {
-    return safeApiCall(_articleService.getArticles(),
-        mapper: (ArticleResponse response) =>
-            response.articles.map((e) => e.toModel()).toList(),
-        saveResult: (ArticleResponse response) => _articleDao
-            .saveArticles(response.articles.map((e) => e.toEntity()).toList()));
+  Stream<Resource<List<ArticleModel>?>> getArticles() {
+    return getNetworkBoundData<ArticleResponse, List<ArticleEntity>,
+            List<ArticleModel>>(
+        loadFromDb: _articleDao.getArticles(),
+        createNetworkCall: _articleService.getArticles(),
+        map: (list) => list?.map((e) => e.toModel()).toList(),
+        saveNetworkResult: (response) async {
+          if (response != null)
+            await _articleDao.saveArticles(
+                response.articles.map((e) => e.toEntity()).toList());
+        });
   }
 }
