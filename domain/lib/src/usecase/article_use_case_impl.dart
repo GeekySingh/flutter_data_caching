@@ -13,7 +13,7 @@ class GetAllArticleUseCaseImpl extends GetAllArticleUseCase {
   GetAllArticleUseCaseImpl(this._repository);
 
   @override
-  Stream<Resource<List<ArticleModel>?>> getArticles() => _repository.getArticles();
+  Stream<Resource<List<ArticleModel>?>> getArticles(bool forceRefresh) => _repository.getArticles(forceRefresh);
 }
 
 @Injectable(as: GetArticleByIdUseCase)

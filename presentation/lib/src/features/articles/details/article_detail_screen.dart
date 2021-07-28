@@ -1,11 +1,11 @@
 import 'package:core/core/core_screen.dart';
-import 'package:core/widgets/network_bound_widget_builder.dart';
 import 'package:domain/domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:presentation/src/common/constants/app_strings.dart';
 import 'package:presentation/src/common/constants/assets.dart';
 import 'package:presentation/src/di/locator.dart';
+import 'package:presentation/src/widgets/network_bound_widget_builder.dart';
 
 import 'article_detail_view_model.dart';
 
@@ -23,25 +23,9 @@ class ArticleDetailScreen extends CoreScreen<ArticleDetailViewModel> {
   }
 
   Widget _buildBody(BuildContext context, ArticleDetailViewModel viewModel) {
-    return NetworkBoundWidgetBuilder(
+    return NetworkBoundWidget<ArticleModel>(
         stream: viewModel.articleByIdStream(id),
-        builder: (context, Resource<ArticleModel?> snapshot) {
-          switch (snapshot.status) {
-            case Status.LOADING:
-              if (snapshot.data == null)
-                return Center(child: CircularProgressIndicator());
-              else
-                return _buildArticleDetailWidget(context, snapshot.data!);
-            case Status.SUCCESS:
-              return _buildArticleDetailWidget(context, snapshot.data!);
-            case Status.FAILURE:
-              return Center(
-                  child: Text(snapshot.failureDetails?.message ?? 'Failure'));
-            case Status.EXCEPTION:
-            default:
-              return Center(child: Text('Something went wrong'));
-          }
-        });
+        child: (context, data) => _buildArticleDetailWidget(context, data),);
   }
 
   Widget _buildArticleDetailWidget(

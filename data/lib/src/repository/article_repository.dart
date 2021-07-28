@@ -19,25 +19,32 @@ class ArticleRepositoryImpl extends BaseRepository
   @override
   Stream<Resource<ArticleModel?>> getArticle(int id) {
     return getLocalData<ArticleEntity, ArticleModel>(
-        loadFromDb: _articleDao.getArticleById(id),
+        loadFromDb: () => _articleDao.getArticleById(id),
         map: (entity) => entity?.toModel());
   }
 
   @override
-  Stream<Resource<List<ArticleModel>?>> getArticles() {
-    return getNetworkBoundData<ArticleResponse, List<ArticleEntity>,
-            List<ArticleModel>>(
-        loadFromDb: _articleDao.getArticles(),
-        createNetworkCall: _articleService.getArticles(),
-        map: (list) => list?.map((e) => e.toModel()).toList(),
-        saveNetworkResult: (response) async {
-          print('Saving response in DB: ${response?.toJson()}');
-          if (response != null) {
-            await _articleDao.saveArticles(
-                response.articles.map((e) => e.toEntity()).toList());
-            print('Response saved in DB!');
-          }
-        });
+  Stream<Resource<List<ArticleModel>?>> getArticles(bool forceRefresh) {
+    /// get always from network in case of force refresh,
+    /// otherwise use cached approach to load data
+    if (forceRefresh)
+      return getNetworkData<ArticleResponse, List<ArticleModel>>(
+          createNetworkCall: () => _articleService.getArticles(),
+          map: (response) =>
+              response?.articles.map((e) => e.toModel()).toList());
+    else
+      return getNetworkBoundData<ArticleResponse, List<ArticleEntity>,
+              List<ArticleModel>>(
+          loadFromDb: () => _articleDao.getArticles(),
+          createNetworkCall: () => _articleService.getArticles(),
+          map: (list) => list?.map((e) => e.toModel()).toList(),
+          saveNetworkResult: (response) async {
+            if (response != null) {
+              await _articleDao.saveArticles(
+                  response.articles.map((e) => e.toEntity()).toList());
+            }
+          },
+          onNetworkCallFailure: (ex) => {print('Network call failed: $ex')});
   }
 
   @override

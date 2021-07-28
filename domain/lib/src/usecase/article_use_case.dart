@@ -7,7 +7,7 @@ import 'base/base_use_case.dart';
 /// abstraction of use case to be used by viewmodel
 abstract class GetAllArticleUseCase implements BaseUseCase {
 
-  Stream<Resource<List<ArticleModel>?>> getArticles();
+  Stream<Resource<List<ArticleModel>?>> getArticles(bool forceRefresh);
 }
 
 /// abstraction of use case to be used by viewmodel

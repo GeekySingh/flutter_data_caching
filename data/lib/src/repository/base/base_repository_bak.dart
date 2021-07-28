@@ -1,51 +1,45 @@
 import 'package:dio/dio.dart';
 import 'package:domain/domain.dart';
+import 'package:logger/logger.dart';
 
-typedef DtoToModelMap<Dto, Model> = Model? Function(Dto? dto);
+typedef DtoToModelMap<Dto, Model> = Model Function(Dto dto);
 typedef EntityToModelMap<Entity, Model> = Model? Function(Entity? entity);
-
-typedef LoadFromDb<Entity> = Future<Entity?> Function();
-typedef CreateNetworkCall<Dto> = Future<Dto?> Function();
 typedef ShouldRefresh<Entity> = bool Function(Entity? entity);
 typedef SaveNetworkResult<Dto> = Future<void> Function(Dto? dto);
 typedef OnNetworkCallFailure = Function(Exception);
 
 abstract class BaseRepository {
-  Stream<Resource<Model?>> getLocalData<Entity, Model>(
-      {required LoadFromDb<Entity> loadFromDb,
+  final _logger = Logger();
+
+  Stream<Resource<Model>> getLocalData<Entity, Model>(
+      {required Future<Entity?> loadFromDb,
       required EntityToModelMap<Entity, Model> map}) async* {
-    print('getLocalData: loading from local storage...');
     yield* emit(Resource.loading(null));
 
-    final resource = await _safeDatabaseCall(loadFromDb.call());
+    final resource = await _safeDatabaseCall(loadFromDb);
     if (resource.status == Status.SUCCESS) {
-      print('getLocalData: local storage call successful!');
       yield* emit(Resource.success(map(resource.data)!));
     } else {
-      print('getLocalData: local storage call failed!');
       yield* emit(Resource.from(resource));
     }
   }
 
-  Stream<Resource<Model?>> getNetworkData<Dto, Model>(
-      {required CreateNetworkCall<Dto> createNetworkCall,
+  Stream<Resource<Model>> getNetworkData<Dto, Model>(
+      {required Future<Dto?> createNetworkCall,
       required DtoToModelMap<Dto, Model> map}) async* {
-    print('getNetworkData: loading from network...');
     yield* emit(Resource.loading(null));
 
-    final resource = await _safeNetworkCall(createNetworkCall.call());
+    final resource = await _safeNetworkCall(createNetworkCall);
     if (resource.status == Status.SUCCESS) {
-      print('getNetworkData: network call successful');
       yield* emit(Resource.success(map(resource.data!)));
     } else {
-      print('getNetworkData: network call failed');
       yield* emit(Resource.from(resource));
     }
   }
 
   Stream<Resource<Model?>> getNetworkBoundData<Dto, Entity, Model>(
-      {required LoadFromDb<Entity> loadFromDb,
-      required CreateNetworkCall<Dto> createNetworkCall,
+      {required Future<Entity?> loadFromDb,
+      required Future<Dto?> createNetworkCall,
       required EntityToModelMap<Entity, Model> map,
       required SaveNetworkResult<Dto> saveNetworkResult,
       ShouldRefresh<Entity>? shouldRefresh,
@@ -54,7 +48,7 @@ abstract class BaseRepository {
     yield* emit(Resource.loading(null));
 
     /// first try to get data from db
-    final dbResource = await _safeDatabaseCall<Entity>(loadFromDb.call());
+    final dbResource = await _safeDatabaseCall(loadFromDb);
 
     /// check if we need to fetch latest data from network or not
     if (shouldRefresh?.call(dbResource.data) ?? true) {
@@ -63,7 +57,7 @@ abstract class BaseRepository {
       yield* emit(Resource.loading(map(dbResource.data)));
 
       /// load data from network
-      final networkResource = await _safeNetworkCall<Dto>(createNetworkCall.call());
+      final networkResource = await _safeNetworkCall(createNetworkCall);
       switch (networkResource.status) {
         case Status.LOADING:
           print('getNetworkBoundData: loading from network...');
@@ -71,37 +65,34 @@ abstract class BaseRepository {
         case Status.SUCCESS:
           print('getNetworkBoundData: network data loaded!');
           print('getNetworkBoundData: saving network data...');
-
           /// save network result
-          await saveNetworkResult.call(networkResource.data);
+          await saveNetworkResult(networkResource.data);
           print('getNetworkBoundData: network data saved in DB!');
 
           /// get latest data from db
-          final newDbResource = await _safeDatabaseCall<Entity>(loadFromDb.call());
+          final newDbResource = await _safeDatabaseCall(loadFromDb);
           print('getNetworkBoundData: returning latest data from DB!');
           yield* emit(Resource.fromMap(newDbResource, map(newDbResource.data)));
           break;
         case Status.EXCEPTION:
-          print('getNetworkBoundData: exception occurred while loading data');
-
+          print('getNetworkBoundData: exception occurred while loading data from network!');
           /// send exception details to network call failure callback
           onNetworkCallFailure
               ?.call(networkResource.exceptionDetails!.exception);
 
           /// get latest data from db
-          final newDbResource = await _safeDatabaseCall<Entity>(loadFromDb.call());
+          final newDbResource = await _safeDatabaseCall(loadFromDb);
           print('getNetworkBoundData: returning data from DB!');
           yield* emit(Resource.fromMap(newDbResource, map(newDbResource.data)));
           break;
         case Status.FAILURE:
           print('getNetworkBoundData: loading network data failed!');
-
           /// send failure details to network call failure callback
           onNetworkCallFailure
               ?.call(Exception(networkResource.failureDetails!.message));
 
           /// get latest data from db
-          final newDbResource = await _safeDatabaseCall<Entity>(loadFromDb.call());
+          final newDbResource = await _safeDatabaseCall(loadFromDb);
           print('getNetworkBoundData: returning data from DB!');
           yield* emit(Resource.fromMap(newDbResource, map(newDbResource.data)));
           break;
@@ -116,26 +107,26 @@ abstract class BaseRepository {
     try {
       final response = await call;
       if (response != null) {
-        print("Get from DB successful!");
+        _logger.d("DB success message -> $response");
         return Resource.success(response);
       } else {
-        print("Get from DB response is null");
+        _logger.d("DB response is null");
         return Resource.failure(
             FailureDetails(message: "DB response is null!"));
       }
     } on Exception catch (e) {
-      print("Get from DB failure message -> $e");
+      _logger.d("DB failure message -> $e");
       return Resource.exception(ExceptionDetails(e));
     }
   }
 
-  Future<Resource<T>> _safeNetworkCall<T>(Future<T?> call) async {
+  Future<Resource<T>> _safeNetworkCall<T>(Future<T> call) async {
     try {
       var response = await call;
-      print("Network success message -> $response");
+      _logger.d("Network success message -> $response");
       return Resource.success(response);
     } on Exception catch (exception) {
-      print("Network error message -> ${exception.toString()}");
+      _logger.e("Network error message -> ${exception.toString()}");
       if (exception is DioError) {
         switch ((exception).type) {
           case DioErrorType.connectTimeout:
@@ -159,6 +150,6 @@ abstract class BaseRepository {
       }
     }
   }
-
+  
   Stream<T> emit<T>(T data) => Stream.value(data);
 }

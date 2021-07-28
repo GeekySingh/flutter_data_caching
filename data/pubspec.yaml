@@ -24,7 +24,7 @@ dependencies:
   retrofit: ^2.0.0-beta1
   json_annotation: ^4.0.1
   # database
-  floor: ^1.0.1
+  floor: ^1.1.0
   # logger
   logger: ^1.0.0
 

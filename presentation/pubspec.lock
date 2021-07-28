@@ -280,7 +280,7 @@ packages:
       name: floor
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.0.1"
+    version: "1.1.0"
   floor_annotation:
     dependency: transitive
     description:
