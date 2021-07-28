@@ -63,46 +63,42 @@ abstract class BaseRepository {
       yield* emit(Resource.loading(map(dbResource.data)));
 
       /// load data from network
-      final networkResource = await _safeNetworkCall<Dto>(createNetworkCall.call());
+      final networkResource =
+          await _safeNetworkCall<Dto>(createNetworkCall.call());
       switch (networkResource.status) {
         case Status.LOADING:
           print('getNetworkBoundData: loading from network...');
           break;
         case Status.SUCCESS:
-          print('getNetworkBoundData: network data loaded!');
-          print('getNetworkBoundData: saving network data...');
 
           /// save network result
           await saveNetworkResult.call(networkResource.data);
-          print('getNetworkBoundData: network data saved in DB!');
 
           /// get latest data from db
-          final newDbResource = await _safeDatabaseCall<Entity>(loadFromDb.call());
-          print('getNetworkBoundData: returning latest data from DB!');
+          final newDbResource =
+              await _safeDatabaseCall<Entity>(loadFromDb.call());
           yield* emit(Resource.fromMap(newDbResource, map(newDbResource.data)));
           break;
         case Status.EXCEPTION:
-          print('getNetworkBoundData: exception occurred while loading data');
 
           /// send exception details to network call failure callback
           onNetworkCallFailure
               ?.call(networkResource.exceptionDetails!.exception);
 
           /// get latest data from db
-          final newDbResource = await _safeDatabaseCall<Entity>(loadFromDb.call());
-          print('getNetworkBoundData: returning data from DB!');
+          final newDbResource =
+              await _safeDatabaseCall<Entity>(loadFromDb.call());
           yield* emit(Resource.fromMap(newDbResource, map(newDbResource.data)));
           break;
         case Status.FAILURE:
-          print('getNetworkBoundData: loading network data failed!');
 
           /// send failure details to network call failure callback
           onNetworkCallFailure
               ?.call(Exception(networkResource.failureDetails!.message));
 
           /// get latest data from db
-          final newDbResource = await _safeDatabaseCall<Entity>(loadFromDb.call());
-          print('getNetworkBoundData: returning data from DB!');
+          final newDbResource =
+              await _safeDatabaseCall<Entity>(loadFromDb.call());
           yield* emit(Resource.fromMap(newDbResource, map(newDbResource.data)));
           break;
       }
